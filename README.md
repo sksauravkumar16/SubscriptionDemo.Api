@@ -1,6 +1,6 @@
 # SubscriptionDemo
 
-Minimal ASP.NET Core (net7.0) project using ADO.NET and JWT authentication.
+Minimal ASP.NET Core (net8.0) project using ADO.NET and JWT authentication.
 
 ## Setup
 
