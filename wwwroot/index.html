@@ -153,6 +153,8 @@
                 <h3>Query Subscriptions</h3>
                 <label>Customer ID: <input id="qCustomerId" /></label>
                 <label>Subscription Name: <input id="qSubscriptionName" /></label>
+                <label>Start Date: <input type="date" id="qStartDate" /></label>
+                <label>End Date: <input type="date" id="qEndDate" /></label>
                 <button onclick="querySubscriptions()">Search</button>
             </section>
 
@@ -162,6 +164,8 @@
                 <label>CustomerName: <input id="cCustomerName" /></label>
                 <label>SubscriptionName: <input id="cSubscriptionName" /></label>
                 <label>Count: <input id="cCount" type="number" value="0" /></label>
+                <label>Start Date: <input type="date" id="cStart" /></label>
+                <label>End Date: <input type="date" id="cEnd" /></label>
                 <button onclick="createSubscription()">Create</button>
             </section>
 
@@ -240,7 +244,9 @@
             if (!token) {alert('Login required'); return; }
 
             const customerId = document.getElementById('qCustomerId').value.trim();
-            const sn = document.getElementById('qSubscriptionName').value.trim();
+                const sn = document.getElementById('qSubscriptionName').value.trim();
+                const sd = document.getElementById('qStartDate').value;
+                const ed = document.getElementById('qEndDate').value;
             if (!customerId) {alert('CustomerId is mandatory'); return; }
 
             const params = new URLSearchParams();
@@ -263,10 +269,12 @@
 
             const payload = {
                 customerId: document.getElementById('cCustomerId').value.trim(),
-            customerName: document.getElementById('cCustomerName').value.trim(),
-            subscriptionName: document.getElementById('cSubscriptionName').value.trim(),
-            subscriptionCount: parseInt(document.getElementById('cCount').value || '0'),
-            isActive: true
+                customerName: document.getElementById('cCustomerName').value.trim(),
+                subscriptionName: document.getElementById('cSubscriptionName').value.trim(),
+                subscriptionCount: parseInt(document.getElementById('cCount').value || '0'),
+                startDate: document.getElementById('cStart')?.value || null,
+                endDate: document.getElementById('cEnd')?.value || null,
+                isActive: true
                 };
             if (!payload.customerId || !payload.customerName || !payload.subscriptionName) {
                 alert('CustomerId, CustomerName and SubscriptionName required'); return;
@@ -290,7 +298,7 @@
                 const container = document.getElementById('results');
             if (!items || items.length === 0) {container.innerHTML = '<p>No results</p>'; return; }
 
-            let html = '<table><thead><tr><th>Id</th><th>CustomerId</th><th>CustomerName</th><th>SubscriptionName</th><th>Count</th><th>Active</th><th>Actions</th></tr></thead><tbody>';
+                let html = '<table><thead><tr><th>Id</th><th>CustomerId</th><th>CustomerName</th><th>SubscriptionName</th><th>Count</th><th>Start Date</th><th>End Date</th><th>Active</th><th>Actions</th></tr></thead><tbody>';
                 for (const it of items) {
                     html += `<tr>
                     <td>${it.id}</td>
@@ -298,6 +306,8 @@
                     <td>${it.customerName}</td>
                     <td>${it.subscriptionName}</td>
                     <td>${it.subscriptionCount}</td>
+                    <td>${it.startDate ? new Date(it.startDate).toLocaleDateString() : ''}</td>
+                    <td>${it.endDate ? new Date(it.endDate).toLocaleDateString() : ''}</td>   
                     <td>${it.isActive}</td>
                     <td>
                         <button onclick="updateCount('${it.customerId}','${it.subscriptionName}',1)">+1</button>
@@ -341,134 +351,3 @@
     </script>
 </body>
 </html>
-
-
-<!--<!doctype html>
-<html>
-<head>
-    <meta charset="utf-8" />
-    <title>Customer Subscription - Demo</title>
-    <style>
-        body { font-family: Arial; margin: 24px; }
-        input, select { padding: 6px; margin: 4px }
-        table { border-collapse: collapse; width: 100%; margin-top: 12px}
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left }
-    </style>
-</head>
-<body>
-    <h1>Customer Subscription - Demo</h1>
-
-    <section>
-        <h3>Auth</h3>
-        <label>Username: <input id="aUsername"></label>
-        <label>Password: <input id="aPassword" type="password"></label>
-        <button onclick="register()">Register</button>
-        <button onclick="login()">Login</button>
-        <div id="tokenDiv"></div>
-    </section>
-
-    <section>
-        <h3>Query Subscriptions</h3>
-        <label>Customer ID: <input id="qCustomerId" /></label>
-        <label>Subscription Name: <input id="qSubscriptionName" /></label>
-        <button onclick="query()">Search</button>
-    </section>
-
-    <section>
-        <h3>Create Subscription (requires login)</h3>
-        <label>CustomerId: <input id="cCustomerId" /></label>
-        <label>CustomerName: <input id="cCustomerName" /></label>
-        <label>SubscriptionName: <input id="cSubscriptionName" /></label>
-        <label>Count: <input id="cCount" type="number" value="0"/></label>
-        <button onclick="create()">Create</button>
-    </section>
-
-    <section>
-        <h3>Results</h3>
-        <div id="results"></div>
-    </section>
-
-<script>
-let token = null;
-const apiBase = '/api/CustomerSubscription';
-const authBase = '/api/Auth';
-
-async function register(){
-    const u = document.getElementById('aUsername').value.trim();
-    const p = document.getElementById('aPassword').value.trim();
-
-    if (!u) { alert('Username is required'); return; }
-    if (!p || p.length < 6) { alert('Password must be at least 6 characters'); return; }
-
-    const res = await fetch(authBase + '/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p })
-    });
-    alert('Register status: ' + res.status);
-}
-
-async function login(){
-    const u = document.getElementById('aUsername').value;
-    const p = document.getElementById('aPassword').value;
-    const res = await fetch(authBase + '/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p})});
-    const data = await res.json();
-    if(res.ok){ token = data.token; document.getElementById('tokenDiv').innerText = 'Token set'; } else { alert(data.message || 'Login failed'); }
-}
-
-async function query() {
-  const customerId = document.getElementById('qCustomerId').value;
-  if (!customerId) { alert('CustomerId is mandatory'); return; }
-  const params = new URLSearchParams();
-  params.append('CustomerId', customerId);
-  const sn = document.getElementById('qSubscriptionName').value;
-  if (sn) params.append('SubscriptionName', sn);
-
-  const res = await fetch(apiBase + '?' + params.toString());
-  const data = await res.json();
-  renderResults(data);
-}
-
-function renderResults(items) {
-  const container = document.getElementById('results');
-  if (!items || items.length === 0) { container.innerHTML = '<p>No results</p>'; return; }
-  let html = '<table><thead><tr><th>Id</th><th>CustomerId</th><th>CustomerName</th><th>SubscriptionName</th><th>Count</th><th>Actions</th></tr></thead><tbody>';
-  for (const it of items) {
-    html += `<tr>
-      <td>${it.id}</td>
-      <td>${it.customerId}</td>
-      <td>${it.customerName}</td>
-      <td>${it.subscriptionName}</td>
-      <td>${it.subscriptionCount}</td>
-      <td>
-        <button onclick="updateCount('${it.customerId}','${it.subscriptionName}',1)">+1</button>
-        <button onclick="updateCount('${it.customerId}','${it.subscriptionName}',-1)">-1</button>
-      </td>
-    </tr>`;
-  }
-  html += '</tbody></table>';
-  container.innerHTML = html;
-}
-
-async function create(){
-    if(!token){ alert('login required'); return; }
-    const payload = {
-        customerId: document.getElementById('cCustomerId').value,
-        customerName: document.getElementById('cCustomerName').value,
-        subscriptionName: document.getElementById('cSubscriptionName').value,
-        subscriptionCount: parseInt(document.getElementById('cCount').value||'0'),
-        startDate: null,
-        endDate: null,
-        isActive: true
-    };
-    const res = await fetch(apiBase, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(payload) });
-    if(res.status===201){ alert('Created'); query(); } else { alert('Create failed'); }
-}
-
-async function updateCount(customerId, subscriptionName, delta){
-    const res = await fetch('/api/CustomerSubscription/update-count', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ customerId, subscriptionName, delta })});
-    if(res.ok) query(); else alert('Update failed');
-}
-</script>
-</body>
-</html>-->
